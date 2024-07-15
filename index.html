@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Furniture Predictor</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #imageDisplay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #imageDisplay img {
+            max-width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Upload Furniture Image</h1>
+    <input type="file" id="imageInput">
+    <button onclick="uploadImage()">Upload and Predict</button>
+    <p id="result"></p>
+    <div id="imageDisplay"></div>
+
+    <script>
+        async function uploadImage() {
+            const input = document.getElementById('imageInput');
+            if (input.files.length === 0) {
+                alert('Please select an image file first.');
+                return;
+            }
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Display the uploaded image
+            const imageDisplayElement = document.getElementById('imageDisplay');
+            const uploadedImg = document.createElement('img');
+            uploadedImg.src = URL.createObjectURL(file);
+            imageDisplayElement.innerHTML = '';  // Clear any previous content
+            imageDisplayElement.appendChild(uploadedImg);
+
+            try {
+                console.log('Sending fetch request...');
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('Fetch request completed.');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+
+                const data = await response.json();
+                const resultElement = document.getElementById('result');
+                resultElement.innerText = data.complementary_furniture_3d_model ? '' : data.error;
+
+                // Display the complementary furniture image if the result is a JPEG/PNG file
+                if (data.complementary_furniture_3d_model && (data.complementary_furniture_3d_model.endsWith('.jpeg') || data.complementary_furniture_3d_model.endsWith('.jpg') || data.complementary_furniture_3d_model.endsWith('.png'))) {
+                    const compImg = document.createElement('img');
+                    compImg.src = 'http://127.0.0.1:5000/' + data.complementary_furniture_3d_model;
+                    imageDisplayElement.appendChild(compImg);
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+                document.getElementById('result').innerText = 'Failed to fetch: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
